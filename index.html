@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Multilingual Farmer Advisory Chatbot</title>
+ 
+<style>
+    body { font-family: Arial; background: #f2f2f2; padding: 20px; }
+    #chatbox { width: 100%; height: 350px; background: white;
+               border: 1px solid #ccc; padding: 10px; overflow-y: auto; }
+    .user { color: blue; margin: 8px 0; }
+    .bot { color: green; margin: 8px 0; }
+</style>
+</head>
+ 
+<body>
+ 
+<h2>🌾 Multilingual Farmer Advisory Chatbot (Voice + Text)</h2>
+ 
+<label>Select Language:</label>
+<select id="language">
+    <option value="en">English</option>
+    <option value="hi">Hindi (हिंदी)</option>
+    <option value="kn">Kannada (ಕನ್ನಡ)</option>
+    <option value="te">Telugu (తెలుగు)</option>
+    <option value="ta">Tamil (தமிழ்)</option>
+</select>
+ 
+<br><br>
+ 
+<div id="chatbox"></div>
+ 
+<input type="text" id="userInput" placeholder="Ask your question..." style="width:70%; padding:8px;">
+<button onclick="sendMessage()" style="padding:8px;">Send</button>
+<button onclick="startVoice()" style="padding:8px;">🎤 Voice</button>
+ 
+<script>
+// Sample multilingual responses based on common farmer questions
+const responses = {
+    weather: {
+        en: "The weather is expected to be dry. Irrigate your crops lightly.",
+        hi: "मौसम शुष्क रहेगा। अपनी फसलों को हल्की सिंचाई करें।",
+        kn: "ಹವಮಾನ ಶುಷ್ಕವಾಗಿದೆ. ಬೆಳೆಗಳಿಗೆ ಸ್ವಲ್ಪ ನೀರಾವರಿ ನೀಡಿ.",
+        te: "వాతావరణం పొడి గా ఉంటుంది. పంటలకు తక్కువ నీరు ఇవ్వండి.",
+        ta: "வானிலை உலர்ந்ததாக இருக்கும். பயிர்களுக்கு லேசான பாசனம் செய்யவும்."
+    },
+    fertilizer: {
+        en: "Use nitrogen-rich fertilizer at this stage.",
+        hi: "इस चरण में नाइट्रोजन युक्त उर्वरक का उपयोग करें।",
+        kn: "ಈ ಹಂತದಲ್ಲಿ ನೈಸರ್ಗಿಕ ರಸಗೊಬ್ಬರವನ್ನು ಬಳಸಿ.",
+        te: "ఈ దశలో నైట్రోజన్ ఎరువును ఉపయోగించండి.",
+        ta: "இந்த கட்டத்தில் நைட்ரஜன் உரத்தை பயன்படுத்தவும்."
+    },
+    pests: {
+        en: "There is a chance of pest attack. Use organic neem spray.",
+        hi: "कीट हमले की संभावना है। नीम आधारित स्प्रे का उपयोग करें।",
+        kn: "ಕೀಟ ದಾಳಿಯ ಸಾಧ್ಯತೆ ಇದೆ. ನೀಮ್ ಸ್ಪ್ರೇ ಬಳಸಿ.",
+        te: "కీటక దాడి వచ్చే అవకాశం ఉంది. నిమ్మ నూనె స్ప్రే ఉపయోగించండి.",
+        ta: "பூச்சி தாக்குதல் வாய்ப்பு உள்ளது. வேப்ப எண்ணெய் தெளிக்கவும்."
+    },
+    irrigation: {
+        en: "Irrigate crops only in the morning to save water.",
+        hi: "पानी बचाने के लिए सुबह सिंचाई करें।",
+        kn: "ನೀರನ್ನು ಉಳಿಸಲು ಬೆಳಗ್ಗೆ ನೀರಾವರಿ ಮಾಡಿ.",
+        te: "నీటిని ఆదా చేయడానికి ఉదయం నీరు ఇవ్వండి.",
+        ta: "நீரை சேமிக்க காலை நேரத்தில் பாசனம் செய்யவும்."
+    },
+    crop: {
+        en: "For this season, grow millets or groundnut.",
+        hi: "इस मौसम में बाजरा या मूंगफली उगाएं।",
+        kn: "ಈ ಋತುವಿನಲ್ಲಿ ಸಾಮೆ ಅಥವಾ ಶೇಂಗಾ ಬೆಳೆಯಿರಿ.",
+        te: "ఈ సీజన్‌లో సజ్జలు లేదా పల్లీలు పండించండి.",
+        ta: "இந்த காலத்தில் திணை அல்லது நிலக்கடலை வளர்க்கவும்."
+    },
+    default: {
+        en: "I will help you with farming advice.",
+        hi: "मैं आपकी खेती संबंधी मदद करूंगा।",
+        kn: "ನಾನು ನಿಮಗೆ ಕೃಷಿ ಸಲಹೆ ನೀಡುತ್ತೇನೆ.",
+        te: "నేను రైతు సలహా అందిస్తాను.",
+        ta: "நான் உங்களுக்கு விவசாய ஆலோசனை வழங்குவேன்."
+    }
+};
+ 
+// Display messages
+function appendMessage(sender, text) {
+    const chatbox = document.getElementById("chatbox");
+    const msg = document.createElement("div");
+    msg.className = sender;
+    msg.textContent = (sender === "user" ? "👨‍🌾 Farmer: " : "🤖 Bot: ") + text;
+    chatbox.appendChild(msg);
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
+ 
+// Detect question type
+function detectIntent(question) {
+    question = question.toLowerCase();
+    if (question.includes("weather") || question.includes("rain") || question.includes("climate")) return "weather";
+    if (question.includes("fertilizer") || question.includes("fertiliser") || question.includes("nutrient")) return "fertilizer";
+    if (question.includes("pest") || question.includes("insect")) return "pests";
+    if (question.includes("irrigation") || question.includes("water")) return "irrigation";
+    if (question.includes("crop") || question.includes("plant")) return "crop";
+    return "default";
+}
+ 
+// Send text message
+function sendMessage() {
+    const input = document.getElementById("userInput").value;
+    const lang = document.getElementById("language").value;
+ 
+    if (input.trim() === "") return;
+ 
+    appendMessage("user", input);
+    document.getElementById("userInput").value = "";
+ 
+    const intent = detectIntent(input);
+    const reply = responses[intent][lang];
+ 
+    setTimeout(() => {
+        appendMessage("bot", reply);
+    }, 800);
+}
+ 
+// Voice input
+function startVoice() {
+    const lang = document.getElementById("language").value;
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = lang;
+ 
+    rec.start();
+ 
+    rec.onresult = function(e) {
+        const text = e.results[0][0].transcript;
+        document.getElementById("userInput").value = text;
+        sendMessage();
+    };
+}
+</script>
+ 
+</body>
+</html>
